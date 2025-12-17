@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:18
+    restart: always
+    container_name: otp_based_authentication_system
+    ports:
+      - 5432:5432
+
+    environment:
+       POSTGRES_USER: postgres
+       POSTGRES_PASSWORD: Raj@2006
+       POSTGRES_DB: otp_based_authentication_system
+      
+    volumes:
+      - db_data:/var/lib/postgresql/db_data
+
+volumes:
+ db_data:
