@@ -39,3 +39,10 @@ export const otpVerificationForRegister = z.object({
     .trim()
     .min(6)
 })
+
+export const resetPasswordValidation = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email address")
+})
