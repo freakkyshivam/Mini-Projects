@@ -5,11 +5,20 @@ import { eq } from "drizzle-orm";
 import db from "../db/db.js";
 import Users from "../db/schema/users.schema.js";
 
-import { signupValidation, loginValidation,otpVerificationForRegister,resetPasswordValidation } from "../validation/validation.js";
+import { 
+  signupValidation,
+   loginValidation,
+   otpVerificationForRegister,
+   sendResetOtpValidation,
+   resetPasswordValidation,
+   changePasswordValiadtion
+   } from "../validation/validation.js";
+
 import { redis } from "../config/redis.js";
 import { generateOTP, hashOTP, verifyOTP } from "../utils/otp.js";
 import { findUserByEmail } from "../services/user.service.js";
 import {generateAccessToken, generateRefreshToken,} from '../utils/token.js'
+ 
  
 export const register = async(req:Request, res:Response)=>{
   try {
@@ -196,10 +205,10 @@ export const login = async (req : Request, res:Response)=>{
   }
 }
 
-export const resetPassword = async (req:Request, res:Response)=>{
+export const sendResetOtp = async (req:Request, res:Response)=>{
   try {
 
-    const validationResult = await resetPasswordValidation.safeParseAsync(req.body);
+    const validationResult = await  sendResetOtpValidation.safeParseAsync(req.body);
 
      if(validationResult.error){
       return res.status(400).json({seccess:false, msg:"Please enter valid details", errror:validationResult.error})
@@ -221,7 +230,6 @@ export const resetPassword = async (req:Request, res:Response)=>{
     const hashedOtp = await hashOTP(otp);
 
     const key = `otp:passwordReset:${email}`;
-
      await redis.hSet(key, {
       otp: hashedOtp,
       email,
@@ -230,9 +238,93 @@ export const resetPassword = async (req:Request, res:Response)=>{
 
   await redis.expire(key, 300);
 
+
 return res
   .status(200)
   .json({success:true, msg:`Otp sent on email ${email}, please verify OTP`, otp:otp})
+    
+  } catch (error :any) {
+    console.error("Server error ", error.message);
+    return res.status(500).json({msg:"Server error", error:error.message})
+  }
+}
+
+
+export const resetPassword = async (req:Request, res:Response)=>{
+  try {
+
+    const validationResult = await resetPasswordValidation.safeParseAsync(req.body)
+
+     if(validationResult.error){
+      return res.status(400).json({seccess:false, msg:"Please enter valid details", errror:validationResult.error})
+    }
+
+    const {email, newPassword, otp} = validationResult.data
+
+    if(!email || !newPassword || !otp){
+      return res.status(400).json({success:false, msg:"Invaluid details, please enter valid detail"})
+    }
+
+     const exitingUser = await findUserByEmail(email);
+
+    if(!exitingUser){
+      return res.status(400).json({success:false, msg:`User with this email ${email} is not exits`});
+    }
+
+    const hashedPassword = await argon2.hash(newPassword)
+
+    const [updatedUser] = await db.update(Users).set({
+      password : hashedPassword
+    })
+    .where(eq(Users.email, email))
+    .returning({
+      id:Users.id,
+      name : Users.name,
+      email : Users.email
+    })
+
+    return res.status(200).json({success:true, msg:`Password updated successfully, new password is ${newPassword}`, user:{
+      id:updatedUser.id,
+      name: updatedUser.name,
+      email : updatedUser.email
+    }})
+    
+    
+   } catch (error :any) {
+    console.error("Server error ", error.message);
+    return res.status(500).json({msg:"Server error", error:error.message})
+  }
+}
+
+export const changePassword = async (req:Request, res:Response)=>{
+
+  try {
+
+    const user = req.user;
+
+    if(!user){
+      return res.status(401).json({success:false, msg:"Unauthorized"})
+    }
+
+    const validationResult = await changePasswordValiadtion.safeParseAsync(req.body);
+
+    if(validationResult.error){
+      return res.status(400).json({seccess:false, msg:"Please enter valid details", errror:validationResult.error})
+    }
+
+    const {password, newPassword} = validationResult.data;
+
+    if(!password){
+      return res.status(400).json({success:false, msg:"Password are required"})
+    }
+
+    const hashedPassword = await argon2.hash(newPassword);
+
+    const [updatedUser] = await db.update(Users)
+    .set({password : hashedPassword}) 
+    .where(eq(Users.email, user?.email)).returning()
+    
+    return res.status(200).json({success:true, msg:"Password upadated successfully"});
     
   } catch (error :any) {
     console.error("Server error ", error.message);

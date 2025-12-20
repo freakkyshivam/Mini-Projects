@@ -40,9 +40,36 @@ export const otpVerificationForRegister = z.object({
     .min(6)
 })
 
+export const sendResetOtpValidation = z.object({
+  email: z
+    .string()
+    .trim()
+    .email("Invalid email address"),
+})
+
 export const resetPasswordValidation = z.object({
   email: z
     .string()
     .trim()
-    .email("Invalid email address")
+    .email("Invalid email address"),
+
+   otp : z
+    .string()
+    .trim()
+    .min(6),
+
+    newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+
+})
+
+export const changePasswordValiadtion = z.object({
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+
+   newPassword: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
 })
