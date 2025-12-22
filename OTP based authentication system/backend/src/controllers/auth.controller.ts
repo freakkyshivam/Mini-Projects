@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
 import argon2 from "argon2";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import db from "../db/db.js";
 import Users from "../db/schema/users.schema.js";
+import { UserSessions } from "../db/schema/user_sessions.schema.js";
 
 import { 
   signupValidation,
@@ -15,9 +16,15 @@ import {
    } from "../validation/validation.js";
 
 import { redis } from "../config/redis.js";
-import { generateOTP, hashOTP, verifyOTP } from "../utils/otp.js";
+ 
 import { findUserByEmail } from "../services/user.service.js";
 import {generateAccessToken, generateRefreshToken,} from '../utils/token.js'
+
+ 
+import {sendRegisterAccountVerifyEmail,sendPasswordRestEmail, sendPasswordRestAlertEmail} from '../services/mail/mail.service.js'
+import {sendOtp,verifyOtp} from '../services/otp/otp.service.js'
+ 
+ import crypto from 'node:crypto'
  
  
 export const register = async(req:Request, res:Response)=>{
@@ -41,120 +48,95 @@ export const register = async(req:Request, res:Response)=>{
       return res.status(400).json({success:false, msg:`User with this email ${email} already registered`})
     }
 
-    const otp = generateOTP();
+    const otp = await sendOtp({
+      identifier : email,
+      purpose : "ACCOUNT_VERIFY"
+    })
 
-    if(!otp){
-      return res.status(400).json({success:false, msg:"Otp generation failed"})
-    }
+   const hashedPassword = await argon2.hash(password);
 
-    console.log(otp);
-    
-    const hashedOtp = await hashOTP(otp);
-    const hashedPassword = await argon2.hash(password)
-   const key = `otp:signup:${email}`;
+await redis.set(
+  `pending-user:${email}`,
+  JSON.stringify({ name, email, hashedPassword }),
+  { EX: 600 }
+);
 
-  await redis.hSet(key, {
-  otp: hashedOtp,
-  name,
-  email,
-  hashedPassword,
-  attempts: 0,
-});
+    await sendRegisterAccountVerifyEmail(name,email,otp)
 
-  await redis.expire(key, 300);
-
-  return res
-  .status(200)
-  .json({success:true, msg:`Otp sent on email ${email}, please verify account`, otp:otp})
+      return res.status(200).json({
+      success: true,
+      msg: "OTP sent. Please verify to complete registration.",
+    });
 
   } catch (error :any) {
     console.error("Server error ", error.message);
     return res.status(500).json({msg:"Server error", error:error.message})
   }
 }
+ 
+export const verifyRegisterOtp = async (req: Request, res: Response) => {
 
-export const verifyOtp = async(req:Request, res:Response)=>{
   try {
+    const validationResult = otpVerificationForRegister.safeParse(req.body);
+if (!validationResult.success) {
+  return res.status(400).json({ success: false });
+}
 
-    const validationResult = await otpVerificationForRegister.safeParseAsync(req.body);
-    
-    if(validationResult.error){
-      return res.status(400).json({seccess:false, msg:"Please enter valid details", errror:validationResult.error})
-    }
+    const {  email,otp } = validationResult.data;
 
-    const {otp, email} = validationResult.data;
-
-     if(!otp || !email){
-       return res.status(400).json({seccess:false, msg:"Name , email and password are required"})
-    }
-   const key = `otp:signup:${email}`; 
-
-    const data = await redis.hGetAll(key);
-    console.log(data);
-    
-if (!data.otp) {
+    const existingUser = await findUserByEmail(email);
+ if (existingUser) {
   return res.status(400).json({
-  success: false,
-  msg: "OTP expired or not found"
-});
-
-}
-
-  console.log(data);
-
-    const isValid = await verifyOTP(data.otp, otp)
-
-    if (!isValid) {
-  const attempts = await redis.hIncrBy(key, "attempts", 1);
-  if (attempts >= 5) {
-    await redis.del(key);
-  return res.status(429).json({
     success: false,
-    msg: "Too many OTP attempts. Please register again."
+    msg: "User already verified",
   });
-  }
-
-  return res.status(400).json({success:false, msg:"Invaild OTP"})
 }
 
- await redis.del(key);
 
-  const [user] = await db.insert(Users).values({
-    name : data.name,
-    email : data.email,
-    password : data.hashedPassword,
-  })
-  .returning({
-    id: Users.id,
-    name: Users.name,
-    email: Users.email,
-    createdAt: Users.createdAt,
-  });
-
-  const accessToken = await generateAccessToken(user.id, user.email);
-  const refreshToken = await generateRefreshToken(user.id, user.email);
-
-  return res
-  .cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    })
-  .status(201).json({success:true, msg:"User created successfully", user:{
-    id : user.id,
-    name : user.name,
-    email : user.email,
-    accessToken
-  }})
-
-   } catch (error :any) {
-    console.error("Server error ", error.message);
-     if (error.code === "23505") {
-    throw new Error("Email already exists");
-  }
-    return res.status(500).json({msg:"Server error", error:error.message})
-  }
+    const pending = await redis.get(`pending-user:${email}`);
+if (!pending) {
+  return res.status(400).json({ msg: "Registration expired" });
 }
+
+const { name, hashedPassword } = JSON.parse(pending);
+
+    const result = await verifyOtp({
+      identifier: email,
+      purpose: "ACCOUNT_VERIFY",
+      otp,
+    });
+
+    if (!result.valid) {
+      return res.status(400).json({
+        success: false,
+        msg: result.reason,
+      });
+    }
+
+    await redis.del(`pending-user:${email}`);
+
+    const [user] = await db.insert(Users).values({
+      name,
+      email,
+      password: hashedPassword,
+      isAccountVerified : true,
+      lastLoginAt : new Date()
+    }).returning();
+
+ 
+
+   
+    return res
+      .status(201)
+      .json({
+        success: true,
+         msg:"Registration successfull"
+      });
+  } catch (err: any) {
+    return res.status(500).json({ success: false });
+  }
+};
+
 
 export const login = async (req : Request, res:Response)=>{
   try {
@@ -182,20 +164,66 @@ export const login = async (req : Request, res:Response)=>{
       return res.status(400).json({success:false, msg:"Invalid password"});
     }
 
+    if(existingUser.is2fa){
+
+    }
+
     const accessToken = await generateAccessToken(existingUser.id, existingUser.email);
   const refreshToken = await generateRefreshToken(existingUser.id, existingUser.email);
+
+  await db.update(Users).set({
+    lastLoginAt : new Date()
+  }).where(eq(Users.email, email))
+
+  const hashedRefreshToken = await argon2.hash(refreshToken as string)
+  const sessionId = crypto.randomUUID();
+  const device = req.deviceInfo;
+
+  console.log(device);
+  
+   
+ await db.insert(UserSessions).values({
+  id : sessionId,
+  userId: existingUser.id,
+  refreshToken: hashedRefreshToken,
+  isActive: true,
+
+  deviceName: req.deviceInfo?.deviceName ?? null,
+  deviceType: req.deviceInfo?.deviceType ?? null,
+  os: req.deviceInfo?.os ?? null,
+  browser: req.deviceInfo?.browser ?? null,
+  ipAddress: req.deviceInfo?.ipAddress ?? null,
+});
+
+// const options = {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === "production",
+//       sameSite: "strict",
+// }
 
   return res
   .cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-    })
-  .status(201).json({success:true, msg:"User created successfully", user:{
+})
+  .cookie("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+})
+
+.cookie("sid", sessionId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+})
+  .status(200).json({success:true, msg:"User login successfully", user:{
     id : existingUser.id,
     name : existingUser.name,
     email : existingUser.email,
-    accessToken
+    accessToken,
+    device
   }})
 
 
@@ -226,22 +254,16 @@ export const sendResetOtp = async (req:Request, res:Response)=>{
       return res.status(400).json({success:false, msg:`User with this email ${email} is not exits`});
     }
 
-    const otp = generateOTP();
-    const hashedOtp = await hashOTP(otp);
+    const otp = await sendOtp({
+      identifier: email,
+      purpose : "RESET_PASSWORD"
+    })
 
-    const key = `otp:passwordReset:${email}`;
-     await redis.hSet(key, {
-      otp: hashedOtp,
-      email,
-      attempts: 0,
-  });
-
-  await redis.expire(key, 300);
-
+     await sendPasswordRestEmail(exitingUser.name,email,otp)
 
 return res
   .status(200)
-  .json({success:true, msg:`Otp sent on email ${email}, please verify OTP`, otp:otp})
+  .json({success:true, msg:`Otp sent on email ${email}, please verify OTP` })
     
   } catch (error :any) {
     console.error("Server error ", error.message);
@@ -265,6 +287,16 @@ export const resetPassword = async (req:Request, res:Response)=>{
       return res.status(400).json({success:false, msg:"Invaluid details, please enter valid detail"})
     }
 
+    const result = await verifyOtp({
+      identifier : email,
+      purpose : "RESET_PASSWORD",
+      otp
+    })
+
+    if(!result.valid){
+      return res.status(400).json({success:false, msg:result.reason})
+    }
+
      const exitingUser = await findUserByEmail(email);
 
     if(!exitingUser){
@@ -282,6 +314,8 @@ export const resetPassword = async (req:Request, res:Response)=>{
       name : Users.name,
       email : Users.email
     })
+
+    await sendPasswordRestAlertEmail(exitingUser.name, email)
 
     return res.status(200).json({success:true, msg:`Password updated successfully, new password is ${newPassword}`, user:{
       id:updatedUser.id,
@@ -329,5 +363,161 @@ export const changePassword = async (req:Request, res:Response)=>{
   } catch (error :any) {
     console.error("Server error ", error.message);
     return res.status(500).json({msg:"Server error", error:error.message})
+  }
+}
+
+export const logout = async(req:Request, res:Response)=>{
+  try {
+
+    const {refreshToken, sid} = req.cookies || req.body;
+
+      if(refreshToken && sid){
+        console.log("refresh token and sid");
+        
+        const [session] = await db
+        .select()
+        .from(UserSessions)
+        .where(eq(UserSessions.id, sid))
+
+        if(session && session.isActive){
+          console.log('session and active');
+          
+          const isValid = await argon2.verify(
+            session.refreshToken,
+            refreshToken
+          );
+
+          if(isValid){
+            console.log('isValid');
+            
+            await db.
+            update(UserSessions)
+            .set({
+              isActive : false,
+              revokedAt : new Date()
+            }).where(eq(UserSessions.id, sid))
+          }
+        }
+      }
+    
+
+    res.clearCookie("sid", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+   res.clearCookie("accessToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+
+
+  } catch (error:any) {
+    console.error(error.message)
+    return res.status(500).json({success:false, msg:"Internal server error"})
+  }
+}
+
+export const terminateAllDevice = async (req: Request, res: Response) => {
+  try {
+    const user = req.user;
+
+    if (!user?.id) {
+      return res
+        .status(401)
+        .json({ success: false, msg: "Unauthorized" });
+    }
+
+    const {refreshToken, sid } = req.cookies;
+
+     if (!sid || !refreshToken) {
+      return res
+        .status(400)
+        .json({ success: false, msg: "Session not found" });
+    }
+
+    if(sid && refreshToken){
+      const [activeSession] = await db
+    .select()
+    .from(UserSessions)
+    .where(
+        and(
+    eq(UserSessions.id, sid),
+    eq(UserSessions.userId, user.id),
+    eq(UserSessions.isActive, true)
+  )
+    )
+
+    if (!activeSession) {
+  return res.status(401).json({
+    success: false,
+    msg: "Invalid or expired session",
+  });
+}
+
+    const isValid = await argon2.verify(
+      activeSession.refreshToken,
+       refreshToken)
+
+       if(isValid){
+        
+    await db
+      .update(UserSessions)
+      .set({
+        isActive: false,
+        revokedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(UserSessions.userId, user.id),  
+          ne(UserSessions.id, sid),         
+          eq(UserSessions.isActive, true)
+        )
+      );
+       }
+    }
+
+  
+    return res.status(200).json({
+      success: true,
+      message: "All other devices logged out successfully",
+    });
+  } catch (error: any) {
+    console.error("Terminate devices error:", error.message);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+};
+
+export const refreshToken = async(req:Request, res:Response)=>{
+  try {
+    
+  } catch (error: any) {
+    console.error("Terminate devices error:", error.message);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
   }
 }
