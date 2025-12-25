@@ -27,7 +27,7 @@ const NavBar = () => {
               <Shield className="h-6 w-6 text-white" />
             </div>
             <h1 className="text-2xl font-bold bg-linear-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
-              MyApp
+              Auth
             </h1>
           </div>
 

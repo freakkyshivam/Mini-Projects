@@ -19,14 +19,15 @@ import {
 
 import { Eye, EyeOff,LogIn } from 'lucide-react';
 
-import axios from 'axios'
-
 import { useNavigate } from 'react-router-dom';
- 
+
+import {toast, ToastContainer} from 'react-toastify'
+import { loginApi } from '@/api/authApi';
+ import { useAuth } from '@/auth/useAuth';
 
 const loginSchema = z.object({
     email: z.string().email("Invaild email"),
-    password: z.string().min(6, 'Minimum 6 character')
+    password: z.string().min(8, 'Minimum 8 character')
 })
 
 type LoginFormData = z.infer<typeof loginSchema>
@@ -34,6 +35,7 @@ type LoginFormData = z.infer<typeof loginSchema>
 export default function LoginForm() {
 
     const [showPassword, setShowPassword] = useState(false)
+   const {setUser} = useAuth();
 
     const navigate = useNavigate();
     const {
@@ -43,25 +45,29 @@ export default function LoginForm() {
     } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
 
     const onSubmit = async (d: LoginFormData) => {
-        console.log(d);
-        const {data} = await axios.post(`http://localhost:3000/api/auth/login`,{
-          email : d.email,
-          password : d.password
-        })
+        const data = await loginApi(d.email,d.password)
         console.log(data);
+        
+         if(!data.success){
+           toast.error(data.msg) 
+           return;
+         }
+         toast.success(`Welcome back ${data?.user?.name}`)
+          setUser(data.user)
+         navigate('/dashboard')
     }
 
     return (
       
         <section  className="min-h-screen flex flex-col items-center justify-center  p-4" id="login">
-
+          <ToastContainer/>
            <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-20 left-10 w-72 h-72 bg-blue-600 rounded-full mix-blend-lighten filter blur-3xl opacity-10 animate-blob"></div>
           <div className="absolute top-40 right-20 w-72 h-72 bg-purple-600 rounded-full mix-blend-lighten filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
           <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-pink-600 rounded-full mix-blend-lighten filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
         </div>
             <Card className="w-[380px]">
-
+             
                  <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-blue-100 rounded-lg">

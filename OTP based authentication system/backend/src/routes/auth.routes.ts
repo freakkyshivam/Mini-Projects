@@ -7,7 +7,7 @@ import {
        resetPassword,
        changePassword,
        logout,
-       terminateAllDevice
+       terminateAllOtherDevice
      } from "../controllers/auth.controller.js";
 
      import authMiddleware from "../middleware/auth.middleware.js";
@@ -22,6 +22,6 @@ router.post('/login',deviceInfo, login);
 router.post('/reset-password', resetPassword)
 router.post('/change-password', authMiddleware, changePassword)
 router.post('/logout',authMiddleware,logout);
-router.post('/terminate-all-device',authMiddleware,terminateAllDevice)
+router.post('/terminate-all-device',authMiddleware,terminateAllOtherDevice)
 
 export default router;

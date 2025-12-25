@@ -5,7 +5,8 @@ import authRoutes from './routes/auth.routes.js'
 import cors from 'cors'
 
 const allowedOrigin = [
-    'http://localhost:5173'
+    'http://localhost:5173',
+    '*'
 ]
 
 
