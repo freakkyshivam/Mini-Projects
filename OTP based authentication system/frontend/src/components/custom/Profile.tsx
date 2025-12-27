@@ -68,6 +68,8 @@ const getUserProfile = async (): Promise<ApiResponse<UserProfile>> => {
 
 const updateUserProfile = async (data: Partial<UserProfile>): Promise<ApiResponse<null>> => {
   await new Promise(resolve => setTimeout(resolve, 1000));
+  console.log(data);
+  
   return { success: true, message: 'Profile updated successfully' };
 };
 
@@ -139,7 +141,7 @@ export const ViewProfile = ({ onEdit }: ViewProfileProps) => {
           <div className="flex items-center gap-6">
             <Avatar className="h-24 w-24 ring-4 ring-primary/10">
               <AvatarImage src={profile.avatar} alt={profile.name} />
-              <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-2xl font-semibold">
+              <AvatarFallback className="bg-linear-to-br from-blue-500 to-indigo-600 text-white text-2xl font-semibold">
                 {profile.name.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
