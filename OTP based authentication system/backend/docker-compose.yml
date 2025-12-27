@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Raj@2006
+      POSTGRES_PASSWORD: 454675
       POSTGRES_DB: otp_based_authentication_system
     volumes:
       - db_data:/var/lib/postgresql/data
