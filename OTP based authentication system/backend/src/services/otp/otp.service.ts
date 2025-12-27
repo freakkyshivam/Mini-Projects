@@ -1,9 +1,9 @@
 
-import {redis} from '../../config/redis.js'
-import {generateOtp, hashOtp, compareOtp} from '../../utils/otp.js'
-import { OTP_TTL,MAX_OTP_ATTEMPTS,getOtpKey } from './otp.constant.js'
+import {redis} from '../../config/redis'
+import {generateOtp, hashOtp, compareOtp} from '../../utils/otp'
+import { OTP_TTL,MAX_OTP_ATTEMPTS,getOtpKey } from './otp.constant'
 
-import {SendOtpInput,VerifyOtpInput,VerifyOtpResult} from "./otp.types.js"
+import {SendOtpInput,VerifyOtpInput,VerifyOtpResult} from "./otp.types"
 
 export async function sendOtp({
     identifier,

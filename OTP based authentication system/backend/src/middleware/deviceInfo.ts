@@ -33,13 +33,7 @@ export const deviceInfo = (
   req.socket.remoteAddress ||
   null;
 
-  // console.log({deviceType,
-  //     deviceName,
-  //     os,
-  //     browser,
-  //     ipAddress,
-  //   });
-  
+ 
 
     req.deviceInfo = {
       deviceType,

@@ -45,17 +45,31 @@ export default function LoginForm() {
     } = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
 
     const onSubmit = async (d: LoginFormData) => {
-        const data = await loginApi(d.email,d.password)
-        console.log(data);
-        
-         if(!data.success){
-           toast.error(data.msg) 
-           return;
-         }
-         toast.success(`Welcome back ${data?.user?.name}`)
-          setUser(data.user)
-         navigate('/dashboard')
+  try {
+    const data = await loginApi(d.email, d.password);
+
+    if (!data.success) {
+      toast.error(data.msg);
+      return;
     }
+
+    if (!data.user) {
+      toast.error("Login failed: user data missing");
+      return;
+    }
+
+    toast.success(`Welcome back ${data.user.name}`);
+
+    setUser(data.user);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    navigate("/dashboard");
+  } catch (error) {
+    toast.error("Something went wrong. Try again.");
+    console.error(error)
+  }
+};
+
 
     return (
       
@@ -66,7 +80,7 @@ export default function LoginForm() {
           <div className="absolute top-40 right-20 w-72 h-72 bg-purple-600 rounded-full mix-blend-lighten filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
           <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-pink-600 rounded-full mix-blend-lighten filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
         </div>
-            <Card className="w-[380px]">
+            <Card className="w-95">
              
                  <CardHeader className="space-y-1">
         <div className="flex items-center gap-2">

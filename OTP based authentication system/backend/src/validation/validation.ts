@@ -73,3 +73,10 @@ export const changePasswordValiadtion = z.object({
     .string()
     .min(8, "Password must be at least 8 characters"),
 })
+
+export const updateNameValidation = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required"),
+})

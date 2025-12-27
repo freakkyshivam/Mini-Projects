@@ -33,8 +33,30 @@ export interface LoginErrorResponse {
   msg: string;
 }
 
-export interface APIResponse {
+export interface signupResponse {
+  success: false;
+  msg: string;
+}
+
+export interface APIResponse<T> {
   success: boolean;
   msg: string;
-  data: unknown;
+  data?: T;
+}
+
+
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  refreshToken: string;
+  deviceName: string;
+  deviceType: string;
+  os: string;
+  browser: string;
+  ipAddress: string;
+  isActive: boolean;
+  lastUsedAt: string;    
+  createdAt: string;   
+  revokedAt: string | null;
 }

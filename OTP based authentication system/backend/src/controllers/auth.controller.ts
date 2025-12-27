@@ -1,10 +1,10 @@
-import type { Request, Response } from "express";
+import { response, type Request, type Response } from "express";
 import argon2 from "argon2";
 import { and, eq, ne } from "drizzle-orm";
 
-import db from "../db/db.js";
-import Users from "../db/schema/users.schema.js";
-import { UserSessions } from "../db/schema/user_sessions.schema.js";
+import db from "../db/db";
+import Users from "../db/schema/users.schema";
+import { UserSessions } from "../db/schema/user_sessions.schema";
 
 import {
   signupValidation,
@@ -13,21 +13,24 @@ import {
   sendResetOtpValidation,
   resetPasswordValidation,
   changePasswordValiadtion,
-} from "../validation/validation.js";
+} from "../validation/validation";
 
-import { redis } from "../config/redis.js";
+import { redis } from "../config/redis";
+ 
 
-import { findUserByEmail } from "../services/user.service.js";
-import { generateAccessToken, generateRefreshToken } from "../utils/token.js";
+import { findUserByEmail } from "../services/user.service";
+import { generateAccessToken, generateRefreshToken } from "../utils/token";
 
 import {
   sendRegisterAccountVerifyEmail,
   sendPasswordRestEmail,
   sendPasswordRestAlertEmail,
-} from "../services/mail/mail.service.js";
-import { sendOtp, verifyOtp } from "../services/otp/otp.service.js";
+} from "../services/mail/mail.service";
+import { sendOtp, verifyOtp } from "../services/otp/otp.service";
 
 import crypto from "node:crypto";
+ import { cookieOptions } from "../utils/cookiesAption";
+
  
 
 export const register = async (req: Request, res: Response) => {
@@ -215,8 +218,6 @@ export const login = async (req: Request, res: Response) => {
     const sessionId = crypto.randomUUID();
     const device = req.deviceInfo;
 
-    console.log(device);
-
     await db.insert(UserSessions).values({
       id: sessionId,
       userId: existingUser.id,
@@ -230,28 +231,21 @@ export const login = async (req: Request, res: Response) => {
       ipAddress: req.deviceInfo?.ipAddress ?? null,
     });
 
-    // const options = {
-    //       httpOnly: true,
-    //       secure: process.env.NODE_ENV === "production",
-    //       sameSite: "strict",
-    // }
+ 
 
     return res
       .cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+         ...cookieOptions,
+         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+       ...cookieOptions,
+         maxAge: 15 * 60 * 1000,
       })
 
       .cookie("sid", sessionId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+         ...cookieOptions,
+        maxAge : 7 * 24 * 60 * 60 * 1000 
       })
       .status(200)
       .json({
@@ -263,8 +257,7 @@ export const login = async (req: Request, res: Response) => {
           email: existingUser.email,
           isAccountVerified : existingUser.isAccountVerified
         },
-         accessToken,
-          device,
+          
       });
   } catch (error: any) {
     console.error("Server error ", error.message);
@@ -405,59 +398,12 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-export const changePassword = async (req: Request, res: Response) => {
-  try {
-    const user = req.user;
-
-    if (!user) {
-      return res.status(401).json({ success: false, msg: "Unauthorized" });
-    }
-
-    const validationResult = await changePasswordValiadtion.safeParseAsync(
-      req.body
-    );
-
-    if (validationResult.error) {
-      return res
-        .status(400)
-        .json({
-          seccess: false,
-          msg: "Please enter valid details",
-          errror: validationResult.error,
-        });
-    }
-
-    const { password, newPassword } = validationResult.data;
-
-    if (!password) {
-      return res
-        .status(400)
-        .json({ success: false, msg: "Password are required" });
-    }
-
-    const hashedPassword = await argon2.hash(newPassword);
-
-    const [updatedUser] = await db
-      .update(Users)
-      .set({ password: hashedPassword })
-      .where(eq(Users.email, user?.email))
-      .returning();
-
-    return res
-      .status(200)
-      .json({ success: true, msg: "Password upadated successfully" });
-  } catch (error: any) {
-    console.error("Server error ", error.message);
-    return res.status(500).json({ msg: "Server error", error: error.message });
-  }
-};
-
 export const logout = async (req: Request, res: Response) => {
   try {
     const { refreshToken, sid } = req.cookies || req.body;
 
     if (refreshToken && sid) {
-      console.log("refresh token and sid");
+      // console.log("refresh token and sid");
 
       const [session] = await db
         .select()
@@ -465,12 +411,12 @@ export const logout = async (req: Request, res: Response) => {
         .where(eq(UserSessions.id, sid));
 
       if (session && session.isActive) {
-        console.log("session and active");
+        // console.log("session and active");
 
         const isValid = await argon2.verify(session.refreshToken, refreshToken);
 
         if (isValid) {
-          console.log("isValid");
+          // console.log("isValid");
 
           await db
             .update(UserSessions)
@@ -483,29 +429,12 @@ export const logout = async (req: Request, res: Response) => {
       }
     }
 
-    res.clearCookie("sid", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
 
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+res.clearCookie("accessToken", cookieOptions);
+res.clearCookie("refreshToken", cookieOptions);
+res.clearCookie("sid", cookieOptions);
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
 
-    res.clearCookie("token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
 
     res.status(200).json({
       success: true,
@@ -590,8 +519,11 @@ export const terminateAllOtherDevice = async (req: Request, res: Response) => {
 export const refreshToken = async (req: Request, res: Response) => {
   try {
     const user = req.user;
-
+    
+    
    if (!user?.id) {
+    console.log("Unauthorized");
+    
   return res.status(401).json({ success: false, msg: "Unauthorized" });
 }
 
@@ -599,6 +531,8 @@ export const refreshToken = async (req: Request, res: Response) => {
     const { refreshToken:incomingRefreshToken, sid } = req.cookies;
 
       if (!incomingRefreshToken || !sid) {
+        console.log("Missing tokens");
+        
       return res.status(401).json({ success: false, msg: "Missing tokens" });
     }
     
@@ -615,6 +549,8 @@ export const refreshToken = async (req: Request, res: Response) => {
         );
 
          if (!session) {
+          console.log("session not found");
+          
        return res.status(401).json({ success: false, msg: "Session not found" });
       }
 
@@ -635,6 +571,8 @@ export const refreshToken = async (req: Request, res: Response) => {
       res.clearCookie("accessToken");
       res.clearCookie("refreshToken");
 
+      console.log("Refresh token compromised");
+      
         return res.status(401).json({
           success: false,
           msg: "Refresh token compromised"
@@ -660,6 +598,9 @@ export const refreshToken = async (req: Request, res: Response) => {
     eq(UserSessions.isActive, true)
             )
           );
+
+          console.log("Token rotated successfully");
+          
 
         return res
       .cookie("accessToken", newAccessToken, {
@@ -688,3 +629,40 @@ export const refreshToken = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const revokeSession = async (req:Request, res:Response)=>{
+  try {
+    const user = req.user;
+    
+    if(!user?.id){
+      return res.status(401).json({success:false, msg:"Unautohrized"})
+    }
+    const {sid} = req.body || req.params;
+
+    if(!sid){
+      return res.status(400).json({succes:false, msg:"Session id is required"})
+    }
+
+    await db.update(UserSessions)
+    .set({
+      isActive: false,
+      revokedAt : new Date(),
+    })
+    .where(
+      and(
+        eq(UserSessions.id, sid),
+        eq(UserSessions.userId, user.id),
+        eq(UserSessions.isActive, true)
+      )
+    )
+
+    return res.status(200).json({success:true, msg:"Session revoked"})
+
+  } catch (error: any) {
+    console.error("Revoke session error error:", error.message);
+    return res.status(500).json({
+      success: false,
+      msg: "Internal server error",
+    });
+  }
+}
