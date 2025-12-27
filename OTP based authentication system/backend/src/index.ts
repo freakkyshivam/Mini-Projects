@@ -36,7 +36,7 @@ app.use(cookieParser())
 
  app.use("/api/auth",authRoutes );
  app.use('/api/user', userRoutes)
- 
+
 app.get("/health", (req, res) => {
   res.send("OK");
 });

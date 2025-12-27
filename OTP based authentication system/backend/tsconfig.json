@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-     "target": "ES2022",
-     "module": "es2022",
-    "moduleResolution": "node",
+      "target": "ES2022",
+    "module": "es2022",
     "outDir": "./dist",
     "rootDir": "./src",
     "esModuleInterop": true,
@@ -10,7 +9,7 @@
     "strict": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "types": ["node"],
+    "types": ["node"]
    
   },
 
