@@ -27,7 +27,7 @@ const NavBar = () => {
 
   return (
     <header 
-      className="sticky top-0 z-50 backdrop-blur-md bg-black/80 border-b border-gray-800 transition-all duration-300"
+      className="sticky top-0 z-50 backdrop-blur-md bg-transparent border-b border-gray-800 transition-all duration-300"
       style={{
         boxShadow: scrollY > 10 ? '0 4px 6px -1px rgba(0,0,0,0.5)' : 'none'
       }}
@@ -48,6 +48,8 @@ const NavBar = () => {
             <p className="text-[10px] md:text-xs text-gray-500 -mt-0.5">by Shivam Chaudhary</p>
           </div>
         </div>
+
+        <h1 className='font bold text-2xl text-red-600'>The project is currently under development.</h1>
 
          <NavBarMenuAndAvtar handleLogout={handleLogout}/>
       <NavbarMobileMenu handleLogout={handleLogout}/>

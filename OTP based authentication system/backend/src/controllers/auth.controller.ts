@@ -74,8 +74,6 @@ export const register = async (req: Request, res: Response) => {
       purpose: "ACCOUNT_VERIFY",
     });
 
-    console.log(otp);
-    
 
     const hashedPassword = await argon2.hash(password);
 
