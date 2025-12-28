@@ -5,12 +5,11 @@ import { SidebarContent } from '@/components/custom/SidebarContent';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import AllSessions from '@/components/custom/AllSessions';
 import Profile from '@/components/custom/Profile';
-import SecurityOverview from '@/components/custom/Overview';
- 
+import Overview from '@/components/custom/Overview';
  
 
 const UserDashboard = () => {
-  const [activeItem, setActiveItem] = useState<string>('Overview');
+  const [activeItem, setActiveItem] = useState<string>('Home');
   
 
   return (
@@ -46,16 +45,15 @@ const UserDashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 lg:relative mt-10">
-          <div className="container max-w-6xl  mx-auto p-2">
-      
-             {activeItem === "Profile" && (
+          <div className="container max-w-6xl mx-auto p-8">
+            {activeItem === "Home" && (
+              <Overview/>
+            )}
+             {activeItem === "View & Update Profile" && (
               <Profile/>
              )}
-             {activeItem === "Sessions & Devices" && (
+             {activeItem === "Other Sessions" && (
               <AllSessions/>
-             )}
-             {activeItem === 'Overview' && (
-              <SecurityOverview/>
              )}
           </div>
         </main>

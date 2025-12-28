@@ -4,7 +4,7 @@ import RegisterPage from "@/pages/RegisterPage";
 import MainLayout from "@/layout/MainComponent";
 import UserDashboard from "@/pages/UserDashboard";
 import { createBrowserRouter } from "react-router-dom";
- 
+ import Page404 from '@/pages/Page404'
 
 const router = createBrowserRouter([
   {
@@ -15,6 +15,7 @@ const router = createBrowserRouter([
       { path: "login", Component: LoginForm },
       { path: "register", Component: RegisterPage },
       { path: "dashboard", Component: UserDashboard },
+      { path: "404", Component: Page404 },
        
     ],
   },

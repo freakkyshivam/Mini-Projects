@@ -1,5 +1,5 @@
 
-import { User2, Lock,  LogOut,Shield,MonitorSmartphone, Key } from 'lucide-react';
+import { User2, Lock, Info, Users, LogOut, Home } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/auth/useAuth';
 import {type User } from "@/types/types";
@@ -18,14 +18,13 @@ interface SidebarContentProps {
 const UserInfo: User | null = user ?? getLocalUser();
 
 const sidebarItems = [
-    
-    { title: "Overview", icon: Shield },
-    { title: "Profile", icon: User2 },
-    { title: "Sessions & Devices", icon: MonitorSmartphone },
-    { title: "Two-Factor Authentication", icon: Lock },
-    { title: "Change Password", url: "", icon: Key },
+    { title: "Home", url: "", icon: Home },
+    { title: "View & Update Profile", url: "", icon: User2 },
+    { title: "Password and security", url: "", icon: Lock },
+    { title: "Session Information", url: "", icon: Info },
+    { title: "Other Sessions", url: "", icon: Users },
     { title: "Logout", url: "", icon: LogOut },
-    
+    { title: "Terminate all other sessions", url: "", icon: LogOut },
   ];
 
     return (

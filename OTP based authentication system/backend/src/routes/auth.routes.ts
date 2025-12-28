@@ -25,7 +25,7 @@ router.post('/login',deviceInfo, login);
  router.post('/send-reset-otp',sendResetOtp)
 router.post('/reset-password', resetPassword)
 
-router.post('/logout',authMiddleware,logout);
+router.post('/logout',logout);
 router.post('/terminate-all-other-device',authMiddleware,terminateAllOtherDevice)
 router.post('/refresh-token',authMiddleware, refreshToken)
 router.post('/revoke-session',authMiddleware, revokeSession)
