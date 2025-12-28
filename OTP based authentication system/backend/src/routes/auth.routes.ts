@@ -15,7 +15,9 @@ import {
      import authMiddleware from "../middleware/auth.middleware";
      import { deviceInfo } from "../middleware/deviceInfo";
 
-const router = Router();
+import type { Router as RouterType } from 'express';
+
+const router: RouterType = Router();
 
 router.post('/register', register);
 router.post('/verify-register-otp', deviceInfo,verifyRegisterOtp)

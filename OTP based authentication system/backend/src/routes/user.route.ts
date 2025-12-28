@@ -1,7 +1,9 @@
-import express from 'express'
+import {Router} from 'express'
 import { allSessions, UserInfo,changePassword } from '../controllers/user.controller';
 import authMiddleware from '../middleware/auth.middleware';
-const router = express.Router();
+import type { Router as RouterType } from 'express';
+
+const router: RouterType = Router();
 
 router.get('/me',authMiddleware,UserInfo);
 router.get('/sessions',authMiddleware,allSessions);
