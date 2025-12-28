@@ -198,7 +198,7 @@ const HomePage = () => {
             </div>
             
             <div>
-              <h4 className="font-semibold mb-3 text-white">Product</h4>
+              <h4 className="font-semibold mb-3 text-white">Others </h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="https://freakkyshivam.netlify.app/" className="hover:text-blue-400 transition-colors">Portfolio</a></li>
                 <li><a href="https://documenter.getpostman.com/view/47278131/2sBXVbGDPJ" className="hover:text-blue-400 transition-colors">Documentation</a></li>
@@ -217,7 +217,7 @@ const HomePage = () => {
                 <a href="https://x.com/freakkyshivam" target="_blank" className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 hover:text-blue-400 text-gray-400 transition-all duration-300 hover:scale-110">
                   <Twitter className="h-5 w-5" />
                 </a>
-                <a href="mailto-skc722768@gmail.com" target="_blank" className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 hover:text-blue-400 text-gray-400 transition-all duration-300 hover:scale-110">
+                <a href="mailto:skc722768@gmail.com" target="_blank" className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 hover:text-blue-400 text-gray-400 transition-all duration-300 hover:scale-110">
                   <Mail className="h-5 w-5" />
                 </a>
               </div>
