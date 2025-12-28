@@ -1,11 +1,11 @@
  
-import transporter from "../../config/nodemailer";
+import transporter from "../../config/nodemailer.js";
 import {
    accountVerificationTemplate,
    passwordResetTemplate,
    passwordResetAlertTemplate,
    twoFactorAuthTemplate
-   } from "./mail.templates";
+   } from "./mail.templates.js";
 
  
 

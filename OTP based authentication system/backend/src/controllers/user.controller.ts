@@ -1,12 +1,12 @@
 import type { Request, Response } from "express";
 import { and, desc, eq,ne } from "drizzle-orm";
 
-import db from "../db/db";
-import Users from "../db/schema/users.schema";
-import { UserSessions } from "../db/schema/user_sessions.schema";
+import db from "../db/db.js";
+import Users from "../db/schema/users.schema.js";
+import { UserSessions } from "../db/schema/user_sessions.schema.js";
 
 import argon2 from 'argon2'
-import { changePasswordValiadtion,updateNameValidation } from "../validation/validation";
+import { changePasswordValiadtion,updateNameValidation } from "../validation/validation.js";
 
 export const UserInfo = async (req: Request, res: Response) => {
   try {
@@ -111,9 +111,9 @@ export const changePassword = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 
@@ -158,9 +158,9 @@ export const updateName = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 

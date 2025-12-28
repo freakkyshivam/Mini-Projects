@@ -7,7 +7,7 @@ import {
   inet,
 } from "drizzle-orm/pg-core";
 
-import Users from "./users.schema";
+import Users from "./users.schema.js";
 
 export const UserSessions = pgTable("user_sessions", {
   id: text().primaryKey(),

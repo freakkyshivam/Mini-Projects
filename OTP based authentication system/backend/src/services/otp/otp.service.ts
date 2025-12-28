@@ -1,26 +1,28 @@
 
-import {redis} from '../../config/redis'
-import {generateOtp, hashOtp, compareOtp} from '../../utils/otp'
-import { OTP_TTL,MAX_OTP_ATTEMPTS,getOtpKey } from './otp.constant'
+import {redis} from '../../config/redis.js'
+import {generateOtp, hashOtp, compareOtp} from '../../utils/otp.js'
+import { OTP_TTL,MAX_OTP_ATTEMPTS,getOtpKey } from './otp.constant.js'
 
-import {SendOtpInput,VerifyOtpInput,VerifyOtpResult} from "./otp.types"
+import {SendOtpInput,VerifyOtpInput,VerifyOtpResult} from "./otp.types.js"
 
 export async function sendOtp({
     identifier,
     purpose,
     ttl = OTP_TTL
 }:SendOtpInput):Promise<string> {
+     
     const otp = generateOtp();
     const hashedOtp = hashOtp(otp);
 
     const key = getOtpKey(identifier, purpose);
-
+    const otpData = {
+        hashedOtp,
+        attempts : 0
+    };
+ 
     await redis.set(
         key,
-        JSON.stringify({
-            hashedOtp,
-            attempt : 0
-        }),
+        JSON.stringify(otpData),
         {EX: ttl,}
     );
     return otp;

@@ -10,14 +10,14 @@ import {
        terminateAllOtherDevice,
        refreshToken,
        revokeSession
-     } from "../controllers/auth.controller";
+     } from "../controllers/auth.controller.js";
 
-     import authMiddleware from "../middleware/auth.middleware";
-     import { deviceInfo } from "../middleware/deviceInfo";
+     import authMiddleware from "../middleware/auth.middleware.js";
+     import { deviceInfo } from "../middleware/deviceInfo.js";
 
 import type { Router as RouterType } from 'express';
 
-const router: RouterType = Router();
+const router:RouterType = Router();
 
 router.post('/register', register);
 router.post('/verify-register-otp', deviceInfo,verifyRegisterOtp)
@@ -26,7 +26,7 @@ router.post('/login',deviceInfo, login);
 router.post('/reset-password', resetPassword)
 
 router.post('/logout',authMiddleware,logout);
-router.post('/terminate-all-device',authMiddleware,terminateAllOtherDevice)
+router.post('/terminate-all-other-device',authMiddleware,terminateAllOtherDevice)
 router.post('/refresh-token',authMiddleware, refreshToken)
 router.post('/revoke-session',authMiddleware, revokeSession)
 

@@ -1,8 +1,8 @@
 import 'dotenv/config'
 import express from 'express'
 import cookieParser from 'cookie-parser';
-import authRoutes from './routes/auth.routes'
-import userRoutes from './routes/user.route'
+import authRoutes from './routes/auth.routes.js'
+import userRoutes from './routes/user.route.js'
 import cors from 'cors'
 import http from 'node:http'
 
@@ -11,11 +11,11 @@ const allowedOrigin = [
     'https://otpbasedauth.vercel.app'
 ]
 
-
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 const server = http.createServer(app)
 
+ 
 app.use((req, res, next) => {
   console.log(
     `[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`
@@ -24,24 +24,20 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin:allowedOrigin,
-     credentials: true,             
+    origin: allowedOrigin,
+    credentials: true,             
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
 }))
 
-
- app.use(express.json())
+app.use(express.json())
 app.use(cookieParser())
 
- app.use("/api/auth",authRoutes );
- app.use('/api/user', userRoutes)
-
+app.use("/api/auth", authRoutes);
+app.use('/api/user', userRoutes)
+ 
 app.get("/health", (req, res) => {
   res.send("OK");
 });
 
-server.listen(PORT, ()=> console.log(`🚀 Server listen at http://localhost:${PORT}`));
-
-
- 
+server.listen(PORT, () => console.log(`🚀 Server listen at http://localhost:${PORT}`));

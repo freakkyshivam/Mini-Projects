@@ -10,6 +10,7 @@ export const generateAccessToken = async (id:string, email: string)=>{
     return token;
    } catch (error:any) {
     console.error(error.message)
+    throw error;
    }
 }
 
@@ -23,6 +24,7 @@ export const generateRefreshToken = async (id:string, email: string)=>{
     return token;
    } catch (error:any) {
     console.error(error.message)
+    throw error;
    }
 }
 

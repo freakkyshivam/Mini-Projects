@@ -2,9 +2,9 @@ import { response, type Request, type Response } from "express";
 import argon2 from "argon2";
 import { and, eq, ne } from "drizzle-orm";
 
-import db from "../db/db";
-import Users from "../db/schema/users.schema";
-import { UserSessions } from "../db/schema/user_sessions.schema";
+import db from "../db/db.js";
+import Users from "../db/schema/users.schema.js";
+import { UserSessions } from "../db/schema/user_sessions.schema.js";
 
 import {
   signupValidation,
@@ -13,23 +13,23 @@ import {
   sendResetOtpValidation,
   resetPasswordValidation,
   changePasswordValiadtion,
-} from "../validation/validation";
+} from "../validation/validation.js";
 
-import { redis } from "../config/redis";
+import { redis } from "../config/redis.js";
  
 
-import { findUserByEmail } from "../services/user.service";
-import { generateAccessToken, generateRefreshToken } from "../utils/token";
+import { findUserByEmail } from "../services/user.service.js";
+import { generateAccessToken, generateRefreshToken } from "../utils/token.js";
 
 import {
   sendRegisterAccountVerifyEmail,
   sendPasswordRestEmail,
   sendPasswordRestAlertEmail,
-} from "../services/mail/mail.service";
-import { sendOtp, verifyOtp } from "../services/otp/otp.service";
+} from "../services/mail/mail.service.js";
+import { sendOtp, verifyOtp } from "../services/otp/otp.service.js";
 
 import crypto from "node:crypto";
- import { cookieOptions } from "../utils/cookiesAption";
+ import { cookieOptions } from "../utils/cookiesAption.js";
 
  
 
@@ -41,9 +41,9 @@ export const register = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 
@@ -53,7 +53,7 @@ export const register = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Name , email and password are required",
         });
     }
@@ -161,9 +161,9 @@ export const login = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 
@@ -173,7 +173,7 @@ export const login = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Name , email and password are required",
         });
     }
@@ -275,9 +275,9 @@ export const sendResetOtp = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 
@@ -329,9 +329,9 @@ export const resetPassword = async (req: Request, res: Response) => {
       return res
         .status(400)
         .json({
-          seccess: false,
+          success: false,
           msg: "Please enter valid details",
-          errror: validationResult.error,
+          error: validationResult.error,
         });
     }
 
@@ -342,7 +342,7 @@ export const resetPassword = async (req: Request, res: Response) => {
         .status(400)
         .json({
           success: false,
-          msg: "Invaluid details, please enter valid detail",
+          msg: "Invalid details, please enter valid detail",
         });
     }
 
@@ -604,15 +604,11 @@ export const refreshToken = async (req: Request, res: Response) => {
 
         return res
       .cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        ...cookieOptions,
         maxAge: 15 * 60 * 1000, // 15 min
       })
       .cookie("refreshToken", newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        ...cookieOptions,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       })
       .json({
