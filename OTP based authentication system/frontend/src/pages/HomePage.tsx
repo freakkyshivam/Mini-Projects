@@ -117,6 +117,7 @@ const HomePage = () => {
               </Button>
             )}
             <Button 
+             onClick={()=> window.location.href = 'https://documenter.getpostman.com/view/47278131/2sBXVbGDPJ'}
               size="lg" 
               variant="outline"
               className="border-2 border-gray-700 text-gray-300 bg-transparent hover:bg-gray-900 hover:border-gray-600 hover:scale-105 transition-all duration-300 text-base px-8"
